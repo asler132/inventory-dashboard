@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Construction Inventory & Orders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+  <!-- ================= AUTH VIEW ================= -->
+  <div id="authView" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-slate-200">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-14 h-14 bg-amber-500 text-white rounded-xl mb-3 shadow">
+          <i class="fa-solid fa-boxes-stacked text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900">SiteInventory Pro</h1>
+        <p class="text-sm text-slate-500" id="authSubtitle">Sign in to your account</p>
+      </div>
+
+      <div id="authError" class="hidden mb-4 p-3 bg-rose-50 text-rose-600 text-sm rounded-lg border border-rose-200 text-center font-medium">
+        Invalid credentials.
+      </div>
+
+      <form id="authForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Username</label>
+          <input type="text" id="username" placeholder="e.g. admin" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" />
+        </div>
+        <button type="submit" id="authSubmitBtn" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition duration-200 shadow">
+          Sign In
+        </button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-slate-500">
+        <span id="authToggleText">Don't have an account?</span> 
+        <button type="button" id="toggleAuthBtn" class="text-amber-600 hover:text-amber-700 font-semibold ml-1 outline-none">
+          Sign Up
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD VIEW ================= -->
+  <div id="dashboardView" class="hidden min-h-screen flex flex-col">
+    <!-- Navbar -->
+    <header class="bg-slate-900 text-white shadow-md">
+      <div class="px-6 py-4 flex justify-between items-center border-b border-slate-700">
+        <div class="flex items-center space-x-3">
+          <i class="fa-solid fa-boxes-stacked text-amber-500 text-xl"></i>
+          <span class="font-bold text-lg tracking-wide">SiteInventory</span>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-sm text-slate-400">User: <strong id="currentUserDisplay" class="text-white"></strong></span>
+          <button type="button" id="logoutBtn" class="text-sm bg-slate-800 hover:bg-rose-600 hover:text-white transition px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> Sign Out
+          </button>
+        </div>
+      </div>
+      <!-- Tabs -->
+      <div class="px-6 flex space-x-6 text-sm font-medium">
+        <button type="button" id="tabInventory" class="py-3 border-b-2 border-amber-500 text-amber-400 transition">
+          <i class="fa-solid fa-warehouse mr-1"></i> Inventory
+        </button>
+        <button type="button" id="tabOrders" class="py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+          <i class="fa-solid fa-clipboard-list mr-1"></i> Orders
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+      
+      <!-- INVENTORY SECTION -->
+      <div id="sectionInventory" class="space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div class="flex flex-wrap gap-2 items-center w-full sm:w-auto">
+            <div class="relative flex-1 sm:w-72">
+              <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
+              <input type="text" id="searchInventory" placeholder="Search materials..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" />
+            </div>
+            <select id="categoryFilter" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none">
+              <option value="All">All Categories</option>
+              <option value="Cement">Cement</option>
+              <option value="Steel">Steel</option>
+              <option value="Lumber">Lumber</option>
+              <option value="Tools">Tools</option>
+              <option value="Electrical">Electrical</option>
+            </select>
+          </div>
+          <button type="button" id="btnOpenAddInventory" class="bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center shadow">
+            <i class="fa-solid fa-plus mr-2"></i> Add Item
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
+                  <th class="py-3 px-4">Item Name</th>
+                  <th class="py-3 px-4">Category</th>
+                  <th class="py-3 px-4">Stock Level</th>
+                  <th class="py-3 px-4 text-center">In / Out</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+          <div id="noInventoryResults" class="hidden p-8 text-center text-slate-500">No inventory items found.</div>
+        </div>
+      </div>
+
+      <!-- ORDERS SECTION -->
+      <div id="sectionOrders" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div class="flex flex-wrap gap-2 items-center w-full sm:w-auto">
+            <div class="relative flex-1 sm:w-72">
+              <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
+              <input type="text" id="searchOrders" placeholder="Search orders..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" />
+            </div>
+            <select id="orderStatusFilter" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none">
+              <option value="All">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          <button type="button" id="btnOpenAddOrder" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center shadow">
+            <i class="fa-solid fa-cart-plus mr-2"></i> New Order
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
+                  <th class="py-3 px-4">Order Details</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Created</th>
+                  <th class="py-3 px-4">Completed At</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+          <div id="noOrdersResults" class="hidden p-8 text-center text-slate-500">No orders found.</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ================= INVENTORY MODAL ================= -->
+  <div id="inventoryModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="invModalTitle" class="text-lg font-bold text-slate-900">Add Item</h2>
+        <button type="button" class="closeModalBtn text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <form id="inventoryForm" class="space-y-4">
+        <input type="hidden" id="invId" />
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Item Name</label>
+          <input type="text" id="invName" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+          <select id="invCategory" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
+            <option value="Cement">Cement</option>
+            <option value="Steel">Steel</option>
+            <option value="Lumber">Lumber</option>
+            <option value="Tools">Tools</option>
+            <option value="Electrical">Electrical</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
+            <input type="number" id="invQty" min="0" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Low-Stock Alert</label>
+            <input type="number" id="invThreshold" min="1" value="10" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" />
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" class="closeModalBtn px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 text-sm">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-sm shadow">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= ORDER MODAL ================= -->
+  <div id="orderModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Create New Order</h2>
+        <button type="button" class="closeModalBtn text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <form id="orderForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Order Description / Item Name</label>
+          <input type="text" id="orderDesc" placeholder="e.g. 50 bags of Cement from Supplier X" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity Ordered</label>
+          <input type="number" id="orderQty" min="1" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" class="closeModalBtn px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 text-sm">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm shadow">Create Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // DATA & STATE
+    // ==========================================
+    let users = JSON.parse(localStorage.getItem('siteInventoryUsers')) || [{ username: 'admin', password: 'admin' }];
+    let isLoginMode = true;
+
+    let inventory = [
+      { id: 1, name: "Portland Cement (50kg)", category: "Cement", qty: 45, threshold: 15 },
+      { id: 2, name: "Rebar 12mm x 6m", category: "Steel", qty: 8, threshold: 20 },
+      { id: 3, name: "2x4 Treated Lumber (8ft)", category: "Lumber", qty: 32, threshold: 10 }
+    ];
+
+    let orders = [
+      { id: 101, desc: "Restock: Portland Cement", qty: 100, status: "Completed", createdAt: new Date(Date.now() - 86400000).toISOString(), completedAt: new Date(Date.now() - 3600000).toISOString() },
+      { id: 102, desc: "Rebar delivery", qty: 50, status: "Pending", createdAt: new Date().toISOString(), completedAt: null }
+    ];
+
+    // ==========================================
+    // AUTHENTICATION LOGIC
+    // ==========================================
+    const authForm = document.getElementById('authForm'), authError = document.getElementById('authError');
+    const toggleAuthBtn = document.getElementById('toggleAuthBtn');
+
+    toggleAuthBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      isLoginMode = !isLoginMode;
+      authError.classList.add('hidden');
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      
+      document.getElementById('authSubmitBtn').textContent = isLoginMode ? 'Sign In' : 'Create Account';
+      document.getElementById('authSubtitle').textContent = isLoginMode ? 'Sign in to your account' : 'Create a new account';
+      document.getElementById('authToggleText').textContent = isLoginMode ? "Don't have an account?" : "Already have an account?";
+      toggleAuthBtn.textContent = isLoginMode ? 'Sign Up' : 'Sign In';
+    });
+
+    authForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const userVal = document.getElementById('username').value.trim();
+      const passVal = document.getElementById('password').value.trim();
+
+      if (isLoginMode) {
+        if (users.find(u => u.username === userVal && u.password === passVal)) loginSuccess(userVal);
+        else showAuthError('Invalid username or password.');
+      } else {
+        if (users.find(u => u.username === userVal)) showAuthError('Username already exists.');
+        else {
+          users.push({ username: userVal, password: passVal });
+          localStorage.setItem('siteInventoryUsers', JSON.stringify(users));
+          loginSuccess(userVal);
+        }
+      }
+    });
+
+    function showAuthError(msg) { authError.textContent = msg; authError.classList.remove('hidden'); }
+    function loginSuccess(username) {
+      document.getElementById('currentUserDisplay').textContent = username;
+      document.getElementById('authView').classList.add('hidden');
+      document.getElementById('dashboardView').classList.remove('hidden');
+      renderInventory();
+      renderOrders();
+    }
+    
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('authView').classList.remove('hidden');
+      document.getElementById('username').value = ''; document.getElementById('password').value = '';
+      if(!isLoginMode) toggleAuthBtn.click();
+    });
+
+    // ==========================================
+    // TAB NAVIGATION
+    // ==========================================
+    const tabInventory = document.getElementById('tabInventory');
+    const tabOrders = document.getElementById('tabOrders');
+    const sectionInventory = document.getElementById('sectionInventory');
+    const sectionOrders = document.getElementById('sectionOrders');
+
+    tabInventory.addEventListener('click', () => {
+      tabInventory.className = "py-3 border-b-2 border-amber-500 text-amber-400 transition";
+      tabOrders.className = "py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition";
+      sectionInventory.classList.remove('hidden');
+      sectionOrders.classList.add('hidden');
+    });
+
+    tabOrders.addEventListener('click', () => {
+      tabOrders.className = "py-3 border-b-2 border-indigo-500 text-indigo-400 transition";
+      tabInventory.className = "py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition";
+      sectionOrders.classList.remove('hidden');
+      sectionInventory.classList.add('hidden');
+    });
+
+    // ==========================================
+    // UTILS
+    // ==========================================
+    function formatDate(isoString) {
+      if (!isoString) return '<span class="text-slate-400">-</span>';
+      const d = new Date(isoString);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    // Modal Closing
+    document.querySelectorAll('.closeModalBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('inventoryModal').classList.add('hidden');
+        document.getElementById('orderModal').classList.add('hidden');
+      });
+    });
+
+    // ==========================================
+    // INVENTORY SYSTEM
+    // ==========================================
+    function renderInventory() {
+      const query = document.getElementById('searchInventory').value.toLowerCase();
+      const cat = document.getElementById('categoryFilter').value;
+      const filtered = inventory.filter(i => (i.name.toLowerCase().includes(query)) && (cat === 'All' || i.category === cat));
+      
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+      
+      if (filtered.length === 0) { document.getElementById('noInventoryResults').classList.remove('hidden'); } 
+      else {
+        document.getElementById('noInventoryResults').classList.add('hidden');
+        filtered.forEach(item => {
+          const isLow = item.qty <= item.threshold;
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-50 border-b border-slate-100">
+              <td class="py-3 px-4 font-medium text-slate-900">${item.name}</td>
+              <td class="py-3 px-4"><span class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full">${item.category}</span></td>
+              <td class="py-3 px-4 flex items-center space-x-2">
+                <span class="font-bold ${isLow ? 'text-rose-600' : 'text-slate-800'}">${item.qty}</span>
+                ${isLow ? '<span class="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-semibold">Low</span>' : ''}
+              </td>
+              <td class="py-3 px-4 text-center">
+                <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden">
+                  <button type="button" onclick="adjQty(${item.id}, -1)" class="px-2.5 py-1 bg-white hover:bg-slate-100 font-bold border-r">-</button>
+                  <button type="button" onclick="adjQty(${item.id}, 1)" class="px-2.5 py-1 bg-white hover:bg-slate-100 font-bold">+</button>
+                </div>
+              </td>
+              <td class="py-3 px-4 text-right space-x-2">
+                <button type="button" onclick="openEditInv(${item.id})" class="text-slate-400 hover:text-amber-600"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button type="button" onclick="delInv(${item.id})" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>`;
+        });
+      }
+    }
+
+    window.adjQty = (id, d) => { const i = inventory.find(x => x.id === id); if (i) { i.qty = Math.max(0, i.qty + d); renderInventory(); } };
+    window.delInv = (id) => { inventory = inventory.filter(x => x.id !== id); renderInventory(); };
+    window.openEditInv = (id) => {
+      const i = inventory.find(x => x.id === id);
+      if(i) {
+        document.getElementById('invId').value = i.id; document.getElementById('invName').value = i.name;
+        document.getElementById('invCategory').value = i.category; document.getElementById('invQty').value = i.qty;
+        document.getElementById('invThreshold').value = i.threshold;
+        document.getElementById('invModalTitle').textContent = 'Edit Item';
+        document.getElementById('inventoryModal').classList.remove('hidden');
+      }
+    };
+
+    document.getElementById('btnOpenAddInventory').addEventListener('click', () => {
+      document.getElementById('inventoryForm').reset(); document.getElementById('invId').value = '';
+      document.getElementById('invModalTitle').textContent = 'Add Item';
+      document.getElementById('inventoryModal').classList.remove('hidden');
+    });
+
+    document.getElementById('inventoryForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('invId').value;
+      const data = {
+        name: document.getElementById('invName').value.trim(), category: document.getElementById('invCategory').value,
+        qty: parseInt(document.getElementById('invQty').value), threshold: parseInt(document.getElementById('invThreshold').value)
+      };
+      if (id) { Object.assign(inventory.find(i => i.id == id), data); } 
+      else { inventory.push({ id: Date.now(), ...data }); }
+      document.getElementById('inventoryModal').classList.add('hidden'); renderInventory();
+    });
+
+    document.getElementById('searchInventory').addEventListener('input', renderInventory);
+    document.getElementById('categoryFilter').addEventListener('change', renderInventory);
+
+
+    // ==========================================
+    // ORDERS SYSTEM
+    // ==========================================
+    function renderOrders() {
+      const query = document.getElementById('searchOrders').value.toLowerCase();
+      const status = document.getElementById('orderStatusFilter').value;
+      const filtered = orders.filter(o => (o.desc.toLowerCase().includes(query)) && (status === 'All' || o.status === status));
+      
+      const tbody = document.getElementById('ordersTableBody');
+      tbody.innerHTML = '';
+      
+      if (filtered.length === 0) { document.getElementById('noOrdersResults').classList.remove('hidden'); } 
+      else {
+        document.getElementById('noOrdersResults').classList.add('hidden');
+        
+        // Sort: Pending first, then newest completed/cancelled
+        filtered.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        filtered.forEach(order => {
+          let statusBadge = '';
+          if (order.status === 'Pending') statusBadge = '<span class="bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-clock mr-1"></i>Pending</span>';
+          else if (order.status === 'Completed') statusBadge = '<span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-check mr-1"></i>Completed</span>';
+          else statusBadge = '<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-xmark mr-1"></i>Cancelled</span>';
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-50 border-b border-slate-100">
+              <td class="py-3 px-4">
+                <div class="font-medium text-slate-900">${order.desc}</div>
+                <div class="text-xs text-slate-500 mt-0.5">Qty: ${order.qty}</div>
+              </td>
+              <td class="py-3 px-4">${statusBadge}</td>
+              <td class="py-3 px-4 text-xs text-slate-600">${formatDate(order.createdAt)}</td>
+              <td class="py-3 px-4 text-xs font-medium text-slate-800">${formatDate(order.completedAt)}</td>
+              <td class="py-3 px-4 text-right space-x-2">
+                ${order.status === 'Pending' ? `
+                  <button type="button" onclick="updateOrderStatus(${order.id}, 'Completed')" class="text-emerald-600 hover:bg-emerald-50 px-2 py-1 rounded border border-emerald-200 text-xs font-semibold transition" title="Mark Complete">Complete</button>
+                  <button type="button" onclick="updateOrderStatus(${order.id}, 'Cancelled')" class="text-rose-600 hover:bg-rose-50 px-2 py-1 rounded border border-rose-200 text-xs font-semibold transition" title="Cancel Order">Cancel</button>
+                ` : `
+                   <button type="button" onclick="deleteOrder(${order.id})" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+                `}
+              </td>
+            </tr>`;
+        });
+      }
+    }
+
+    window.updateOrderStatus = (id, newStatus) => {
+      const o = orders.find(x => x.id === id);
+      if (o) {
+        o.status = newStatus;
+        o.completedAt = new Date().toISOString(); // Records the exact time!
+        renderOrders();
+      }
+    };
+
+    window.deleteOrder = (id) => { orders = orders.filter(x => x.id !== id); renderOrders(); };
+
+    document.getElementById('btnOpenAddOrder').addEventListener('click', () => {
+      document.getElementById('orderForm').reset();
+      document.getElementById('orderModal').classList.remove('hidden');
+    });
+
+    document.getElementById('orderForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      orders.push({
+        id: Date.now(),
+        desc: document.getElementById('orderDesc').value.trim(),
+        qty: parseInt(document.getElementById('orderQty').value),
+        status: 'Pending',
+        createdAt: new Date().toISOString(),
+        completedAt: null
+      });
+      document.getElementById('orderModal').classList.add('hidden');
+      renderOrders();
+    });
+
+    document.getElementById('searchOrders').addEventListener('input', renderOrders);
+    document.getElementById('orderStatusFilter').addEventListener('change', renderOrders);
+
+  </script>
+</body>
+</html>
